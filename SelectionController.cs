@@ -5,7 +5,7 @@ using UnityEngine;
 public class SelectionController : MonoBehaviour
 {
 
-    private SelectionUtil selectionUtil;
+    public SelectionUtil selectionUtil;
     private RaycastHit hit;
 
     //[SerializeField] private LayerMask layerMask;
