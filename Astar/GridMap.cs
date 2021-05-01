@@ -88,4 +88,10 @@ public class GridMap : MonoBehaviour
         return neightbours;
     }
 
+    public int MaxSize{
+        get{
+            return gridSizeX * gridSizeY;
+        }
+    }
+
 }

@@ -24,7 +24,6 @@ public class FlockingBehaviour : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("unga bunga");
         position = GetComponent<Transform>().position;
         velocity = new Vector3();
         acceleration = new Vector3();
@@ -46,11 +45,11 @@ public class FlockingBehaviour : MonoBehaviour
         if (run)
         {
             // cohesion();
-            seperation();
+            // seperation();
             //align();
         }
         if(order){
-            seek(destination);
+            seekPath();
         }
         velocity += acceleration;
         transform.position += velocity * Time.deltaTime;
@@ -150,11 +149,27 @@ public class FlockingBehaviour : MonoBehaviour
     public float maxSeekSpeed; 
     public float maxSeekForce; 
 
+    private Vector3[] route;
+    private int routeCounter;
+    private bool reachedNode = false;
+
+    private void seekPath(){
+        if (route!=null) {
+            if(routeCounter >= route.Length){
+                order = false;
+                routeCounter = 0;
+                return;
+            }
+            seek(route[routeCounter]);
+
+        }
+    }
     private void seek(Vector3 location)
     {
         if(Vector3.Distance(location, transform.position)<1){
             velocity = new Vector3();
-            order = false;
+            reachedNode = true;
+            routeCounter++;
             return; 
         }
         Vector3 desiredVelocity = location - transform.position;
@@ -167,9 +182,9 @@ public class FlockingBehaviour : MonoBehaviour
         acceleration += steering;
     }
 
-    public void giveOrder(Vector3 dest){
+    public void giveOrder(Vector3[] route,bool recieved) {
         order = true;
-        destination = dest;
+        this.route = route;
     }
 
     private void randomize()
