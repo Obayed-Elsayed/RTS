@@ -12,12 +12,12 @@ public class GridMap : MonoBehaviour
 
     float nodeDiameter;
     int gridSizeX, gridSizeY;
-    void Start() {
+    void Awake() {
         nodeDiameter = nodeRadius * 2;
         gridSizeX = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
         gridSizeY = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
         //unwalkable = LayerMask.NameToLayer("Buildings and Resources");
-        createGrid();
+        // createGrid();
     }
 
     void Update() {

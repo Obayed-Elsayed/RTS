@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Selected : MonoBehaviour
 {
@@ -12,10 +13,12 @@ public class Selected : MonoBehaviour
 
     GameObject controller;
     FlockingBehaviour movementBehaviour;
+    public NavMeshAgent agent;
 
     public void Start() {
         controller = GameObject.FindGameObjectWithTag("GameController");
         movementBehaviour = GetComponent<FlockingBehaviour>();
+        agent = GetComponent<NavMeshAgent>();
     }
     private void Update()
     {
@@ -28,7 +31,9 @@ public class Selected : MonoBehaviour
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(ray, out hit, 500000f, layerMask))
                 {
-                    PathFinderManager.requestPath(new PathRequest(transform.position, hit.point, movementBehaviour.giveOrder));
+                    agent.SetDestination(hit.point);
+
+                    //PathFinderManager.requestPath(new PathRequest(transform.position, hit.point, movementBehaviour.giveOrder));
                     //GetComponent<FlockingBehaviour>().giveOrder(hit.point);
                 }
             }
