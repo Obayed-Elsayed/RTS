@@ -13,14 +13,15 @@ public class TreeGeneration: MonoBehaviour
     public float scale = 10f;
     public float appearingThreshold = 0.5f;
     public GameObject treePrefab;
-
     public GameObject terrain;
     public GameObject waterTerrain;
     
     // private Renderer r;
     private int layerMask = (1 << 8);
+    public LayerMask boxCastMask;
     private float[,] grid;
     private GameObject[,] treeGrid;
+    private MeshCreationUtils meshCreationUtils;
     List<GameObject> treeList;
     
     public bool enable_cleanup = true;
@@ -29,6 +30,9 @@ public class TreeGeneration: MonoBehaviour
     public Vector2 mapFinalCorner = new Vector2(150,150);
     public void Start()
     {
+        bounds = new ShowMeshBounds();
+        meshCreationUtils= GetComponent<MeshCreationUtils>();
+        
         mapSize = new Vector2(Math.Abs(mapFirstCorner.x-mapFinalCorner.x),Math.Abs(mapFirstCorner.y-mapFinalCorner.y));
         mesh = new Mesh();
         terrain.GetComponent<MeshFilter>().mesh = mesh;
@@ -37,9 +41,15 @@ public class TreeGeneration: MonoBehaviour
         CreateWaterMesh(new Vector3(-50, 0, -50), new Vector3(50, 0, 50),-1);
         UpdateWaterMesh();
         GenerateTrees();
+        //GenerateMountains();
+        meshCreationUtils.createMountain(new Vector3(50,0,100), new Vector3 (15,0,15), (15,15),false);
         if(enable_cleanup)cleanUpTrees();
         bake();
     }
+
+    // public void OnDrawGizmos(){
+    //     Gizmos.DrawWireCube(transform.position, new Vector3(mapSize.x, 1, mapSize.y));
+    // }
 
     /*
     Settings:-----------------
@@ -55,8 +65,7 @@ public class TreeGeneration: MonoBehaviour
         -> chunks / larger maps generation (low prio)
         -> Occlusion (low prio)
     */
-    int dimensionx;
-    int dimensiony;
+    int dimensionx, dimensiony, dimx, dimy;
     private Vector2 mapSize;
     private void GenerateTrees(){
                 rayCastMask = (1<<8);
@@ -64,9 +73,8 @@ public class TreeGeneration: MonoBehaviour
         GameObject tree = Instantiate(treePrefab) as GameObject;
         BoxCollider collider = tree.GetComponent<BoxCollider>();
         Destroy(tree);
-        int dimx = (int)(collider.size.x * tree.transform.localScale.x);
-        int dimy = (int)(collider.size.y * tree.transform.localScale.y);
-        Debug.Log(mapSize.x);
+        dimx = (int)(collider.size.x * tree.transform.localScale.x);
+        dimy = (int)(collider.size.z * tree.transform.localScale.z);
         dimensionx = (int)mapSize.x / dimx;
         dimensiony = (int)mapSize.y / dimy;
         grid = new float[dimensionx, dimensiony];
@@ -85,7 +93,8 @@ public class TreeGeneration: MonoBehaviour
                 //Color color;
                 if (grid[x, y] < appearingThreshold)
                 {
-                    Vector3 treePosition = new Vector3(x * dimx - mapSize.x / 2, 0, y * dimy - mapSize.y / 2);
+                    //Vector3 treePosition = new Vector3(x * dimx - mapSize.x / 2, 0, y * dimy - mapSize.y / 2);
+                    Vector3 treePosition = new Vector3(x * dimx + mapFirstCorner.x, 0, y * dimy+mapFirstCorner.y);
                     if (Physics.Raycast(new Vector3(treePosition.x, 500f, treePosition.z), Vector3.down, out hit, 500000f, layerMask) && hit.point.y < 0) {
                         continue;
                     }
@@ -94,7 +103,8 @@ public class TreeGeneration: MonoBehaviour
                     Renderer r = forrest_tree.GetComponent<Renderer>();
                     r.materials[0].color = new Color(r.materials[0].color.r*Random.Range(0.8f,1.2f),r.materials[0].color.g*Random.Range(0.8f,1.2f),r.materials[0].color.b*Random.Range(0.8f,1.2f));
                     BoxCollider standardCollider = forrest_tree.GetComponent<BoxCollider>();
-                    forrest_tree.transform.position = new Vector3(x * dimx - mapSize.x / 2, 0, y * dimy - mapSize.y / 2);
+                    // forrest_tree.transform.position = new Vector3(x * dimx - mapSize.x / 2, 0, y * dimy - mapSize.y / 2);
+                    forrest_tree.transform.position = treePosition;
                     forrest_tree.transform.localScale = new Vector3(Random.Range(0.7f,1f),Random.Range(0.7f,1f),Random.Range(0.7f,1f));
                     forrest_tree.transform.Rotate(Random.Range(-5,5), Random.Range(-5,5), Random.Range(-5,5), Space.Self);
                    // forrest_tree.GetComponent<Collider>() = standardCollider;
@@ -113,6 +123,27 @@ public class TreeGeneration: MonoBehaviour
             }
         }
         // r.material.mainTexture = GenerateTexture(dimensionx, dimensiony);
+    }
+
+    public void GenerateMountains(){
+
+        for (int x = 0; x < dimensionx; x++)
+        {
+            for (int y = 0; y < dimensiony; y++)
+            {
+                // opposite condition of trees! -> no trees probably
+                if (grid[x, y] > appearingThreshold){
+                    Vector3 mountainPosition = new Vector3(x * dimx + mapFirstCorner.x, 0, y * dimy+mapFirstCorner.y);
+
+                    (int x, int y) size= (Random.Range(5,8),Random.Range(5,8));
+                    RaycastHit[] hits = Physics.BoxCastAll(mountainPosition, new Vector3 (size.x,2,size.y), Vector3.up, Quaternion.identity, 0, boxCastMask);
+                    if(hits.Length>0){
+                        continue;
+                    }
+                    meshCreationUtils.createMountain(mountainPosition, new Vector3 (size.x,0,size.y), (10,10),false);
+                }
+            }
+        }
     }
     public int neighbour_range = 1;
     public int cleanUp = 3;
@@ -219,6 +250,7 @@ public class TreeGeneration: MonoBehaviour
         for( int z = 0; z <= terrainZ ;z++){
             for( int x = 0; x <= terrainX ;x++){
                 vertices[i] = new Vector3(startPos.x + x * scale.x, yPosition, startPos.z + z * scale.z);
+                // this Water pond is relative to the zero position of the map
                 float dist = Vector3.Distance(vertices[i], Vector3.zero);
                 if(dist < 50){
                     vertices[i].y= Mathf.PerlinNoise(dist, 0) *-10;
@@ -292,6 +324,7 @@ public class TreeGeneration: MonoBehaviour
     } 
 
     private RaycastHit hit;
+    ShowMeshBounds bounds; // for debugging box cast
     void Update()
     {
 
@@ -304,6 +337,21 @@ public class TreeGeneration: MonoBehaviour
                     GameObject forrest_tree = Instantiate(treePrefab) as GameObject;
                     forrest_tree.transform.position = hit.point;
                     forrest_tree.layer = unitLayer;
+                    //bake();
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.O))
+            {
+                Debug.Log("Box Cast Test");
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit, 500000f, rayCastMask))
+                {
+                    RaycastHit[] hits = Physics.BoxCastAll(hit.point, new Vector3 (5,2,5), Vector3.up, Quaternion.identity, 0, boxCastMask);
+                        bounds.v3Center = hit.point;
+                        bounds.v3Extents = new Vector3(5,2,5);
+                    if(hits.Length>0){
+                        Debug.Log("Hits");
+                    }
                     //bake();
                 }
             }

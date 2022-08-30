@@ -37,6 +37,8 @@ public class SelectionController : MonoBehaviour
         if(Physics.Raycast(ray, out hit, 500000f, layerMask)){
             // Debug.Log(hit.point);
             initialPoint = hit.point;
+            Vector3 forward = hit.point - Camera.main.transform.position;
+            Debug.DrawRay(Camera.main.transform.position, forward, Color.red,100);
            // Debug.Log("Initial: "+ initialPoint.ToString());
         }
     }
@@ -52,9 +54,11 @@ public class SelectionController : MonoBehaviour
         }
 
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
+        
         if(Physics.Raycast(ray, out hit, 500000f, layerMask)){
             finalPoint = hit.point;
+            Vector3 forward = hit.point - Camera.main.transform.position;
+            Debug.DrawRay(Camera.main.transform.position, forward, Color.red, 100);
             //Debug.Log("Final: "+ finalPoint.ToString());
         }
         
@@ -83,7 +87,7 @@ public class SelectionController : MonoBehaviour
     }
     if(initialPoint!= null && finalPoint !=null){
         // Debug.DrawLine(midpoint,midpoint+ new Vector3(1,1,1),Color.red);
-        Debug.DrawLine(initialPoint, finalPoint, Color.green);
+        Debug.DrawLine(initialPoint, finalPoint, Color.blue);
     }
 }
 
